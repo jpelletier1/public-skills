@@ -16,6 +16,7 @@ Activate this skill when the user requests to:
 - "Submit feedback"
 - `/customer-feedback`
 - "Record customer feedback"
+- "Product feedback"
 
 ## Prerequisites
 
