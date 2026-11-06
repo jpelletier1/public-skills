@@ -1,7 +1,7 @@
 {
-  "name": "linear-github-feedback-sync",
+  "name": "linear-github-sync",
   "version": "1.0.0",
-  "description": "Sync Linear tickets labeled feedback-github-sync in the OHE and PRD teams into anonymized OpenHands/enterprise GitHub issues, with versioned sync history and approval through a Linear comment.",
+  "description": "Sync Linear tickets labeled linear-github-sync in the OHE and PRD teams into anonymized OpenHands/enterprise GitHub issues, with versioned sync history and approval through a Linear comment.",
   "author": {
     "name": "OpenHands",
     "email": "contact@all-hands.dev"

@@ -2,7 +2,7 @@
 
 ## GitHub issue body (draft content)
 
-Write the anonymized content to `/tmp/feedback-sync/<LINEAR-ID>.md`. Keep the
+Write the anonymized content to `/tmp/linear-github-sync/<LINEAR-ID>.md`. Keep the
 structure of the Linear description when it has one. When it has none, use:
 
 ```markdown

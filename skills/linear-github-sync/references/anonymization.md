@@ -45,7 +45,7 @@ Check every one of these, not only the description:
 ## Deny-terms file
 
 Write every real name, domain, and identifier that was replaced to a temp file,
-one per line, for example `/tmp/feedback-sync/PRD-123.deny`:
+one per line, for example `/tmp/linear-github-sync/PRD-123.deny`:
 
 ```
 Acme

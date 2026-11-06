@@ -1,11 +1,11 @@
 ---
-name: linear-github-feedback-sync
-description: This skill should be used when the user asks to "sync feedback tickets to GitHub", "run the feedback GitHub sync", "sync Linear tickets labeled feedback-github-sync", "push Linear feedback to OpenHands/enterprise", "duplicate a Linear issue into the enterprise repo", or "/feedback-github-sync". Finds Linear issues in the OHE and PRD teams labeled feedback-github-sync, anonymizes customer names, drafts a new or updated OpenHands/enterprise GitHub issue with a versioned sync history, asks for approval through a Linear comment linking to the conversation, then writes to GitHub and removes the label.
+name: linear-github-sync
+description: This skill should be used when the user asks to "sync feedback tickets to GitHub", "run the feedback GitHub sync", "run the Linear GitHub sync", "sync Linear tickets labeled linear-github-sync", "push Linear feedback to OpenHands/enterprise", "duplicate a Linear issue into the enterprise repo", or "/linear-github-sync". Finds Linear issues in the OHE and PRD teams labeled linear-github-sync, anonymizes customer names, drafts a new or updated OpenHands/enterprise GitHub issue with a versioned sync history, asks for approval through a Linear comment linking to the conversation, then writes to GitHub and removes the label.
 ---
 
-# Linear → GitHub feedback sync
+# Linear → GitHub sync
 
-Copy the content of Linear tickets labeled `feedback-github-sync` (teams **OHE** and
+Copy the content of Linear tickets labeled `linear-github-sync` (teams **OHE** and
 **PRD**) into GitHub issues in **`OpenHands/enterprise`**, anonymized, after explicit
 approval. Run on demand. Nothing is written to GitHub until the user approves the
 exact text in this conversation.
@@ -24,13 +24,13 @@ exact text in this conversation.
   `sourceType`) and for linking a newly created issue back to Linear in `create`.
   If it is missing, use the fallbacks in Step 2 and Step 5.
 
-Work in `/tmp/feedback-sync/` and delete it at the end.
+Work in `/tmp/linear-github-sync/` and delete it at the end.
 
 ## Workflow
 
 ### Step 1: Find labeled tickets
 
-Call `list_issues` twice, with `label: "feedback-github-sync"` and `team: "OHE"`,
+Call `list_issues` twice, with `label: "linear-github-sync"` and `team: "OHE"`,
 then `team: "PRD"`. Follow `cursor` while `hasNextPage` is true. If nothing is
 found, report that and stop.
 
@@ -77,20 +77,20 @@ not treat them as the target.
 3. Write an anonymized title and body following `references/anonymization.md`.
    Body format is in `references/templates.md`. For **Update**, read the current
    GitHub body first and keep its structure and aliases where they still apply.
-4. Save the body to `/tmp/feedback-sync/<LINEAR-ID>.md` and every replaced real
-   term plus all customer names to `/tmp/feedback-sync/<LINEAR-ID>.deny`.
+4. Save the body to `/tmp/linear-github-sync/<LINEAR-ID>.md` and every replaced real
+   term plus all customer names to `/tmp/linear-github-sync/<LINEAR-ID>.deny`.
 5. Render the exact final text:
 
    ```bash
    # Create
    python3 $S create --dry-run --linear-id PRD-123 --title "<anonymized title>" \
-     --label enhancement --content-file /tmp/feedback-sync/PRD-123.md \
-     --deny-terms /tmp/feedback-sync/PRD-123.deny
+     --label enhancement --content-file /tmp/linear-github-sync/PRD-123.md \
+     --deny-terms /tmp/linear-github-sync/PRD-123.deny
 
    # Update (add --title "<anonymized title>" only if the title should change)
    python3 $S update --dry-run --linear-id PRD-123 --issue 456 \
-     --content-file /tmp/feedback-sync/PRD-123.md \
-     --deny-terms /tmp/feedback-sync/PRD-123.deny
+     --content-file /tmp/linear-github-sync/PRD-123.md \
+     --deny-terms /tmp/linear-github-sync/PRD-123.deny
    ```
 
    The script refuses to render while the title or body contains a denied term, a
@@ -145,7 +145,7 @@ For each approved ticket:
    If the link still cannot be confirmed, stop for this ticket: keep the label, and
    report the GitHub URL and the error so the user can link it by hand.
 4. Remove the label: `save_issue` with `id: <LINEAR-ID>` and
-   `removeLabels: ["feedback-github-sync"]`.
+   `removeLabels: ["linear-github-sync"]`.
 5. Post the completion comment from `references/templates.md`.
 
 If a GitHub write fails, keep the label and report the error. Do not retry with
@@ -154,7 +154,7 @@ changed text without showing it to the user again.
 ### Step 6: Summarize
 
 Report, per ticket: created or updated (with GitHub link and version), skipped
-(with reason), or waiting for approval. Then `rm -rf /tmp/feedback-sync`.
+(with reason), or waiting for approval. Then `rm -rf /tmp/linear-github-sync`.
 
 ## Rules
 

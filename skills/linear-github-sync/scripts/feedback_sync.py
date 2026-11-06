@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deterministic helpers for the linear-github-feedback-sync skill.
+"""Deterministic helpers for the linear-github-sync skill.
 
 Subcommands:
   links             List OpenHands/enterprise issues attached to a Linear issue and

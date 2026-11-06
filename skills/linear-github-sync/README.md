@@ -1,15 +1,15 @@
-# Linear → GitHub Feedback Sync
+# Linear → GitHub Sync
 
 Copy Linear feedback tickets into the public `OpenHands/enterprise` repository,
 anonymized, after you approve the exact text.
 
 ## Trigger
 
-- `/feedback-github-sync`, or ask to "sync feedback tickets to GitHub"
+- `/linear-github-sync`, or ask to "sync feedback tickets to GitHub"
 
 ## How it works
 
-1. Finds tickets labeled `feedback-github-sync` in the **OHE** and **PRD** Linear teams.
+1. Finds tickets labeled `linear-github-sync` in the **OHE** and **PRD** Linear teams.
 2. For each ticket, checks for an attached `OpenHands/enterprise` issue:
    - none: drafts a new issue (`bug` or `enhancement`, no assignee)
    - one: drafts a new body for it, with the next version in a "Sync history" block
