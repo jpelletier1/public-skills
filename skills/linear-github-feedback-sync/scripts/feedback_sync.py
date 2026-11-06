@@ -6,7 +6,10 @@ Subcommands:
                     whether Linear's native GitHub sync owns each one.
   conversation-url  Print the URL of the current OpenHands conversation.
   check-leaks       Fail if a draft contains a denied term, email, or private link.
-  create            Create a GitHub issue from an anonymized draft (v1).
+  create            Create a GitHub issue from an anonymized draft (v1), then link it
+                    to the Linear ticket and verify the link.
+  link              Link an existing OpenHands/enterprise issue to a Linear ticket
+                    and verify it (retry after a failed link in `create`).
   update            Rewrite a GitHub issue body from an anonymized draft (vN+1).
 
 `create` and `update` print the exact final body with --dry-run; run the same
@@ -83,7 +86,7 @@ def gh(path, data=None, method="GET"):
 
 def linear(query, variables):
     key = os.environ.get("LINEAR_API_KEY") or sys.exit(
-        "LINEAR_API_KEY is not set; use the fallback native-sync check in SKILL.md"
+        "LINEAR_API_KEY is not set; use the Linear MCP fallback in SKILL.md"
     )
     headers = {"Authorization": key, "Content-Type": "application/json"}
     res = http_json(LINEAR_API, headers, {"query": query, "variables": variables}, "POST")
@@ -186,7 +189,48 @@ def cmd_create(args):
         print(f"TITLE: {args.title}\nLABELS: {', '.join(args.label)}\n\n{body}")
         return
     issue = gh(f"/repos/{REPO}/issues", {"title": args.title, "body": body, "labels": args.label}, "POST")
-    print(json.dumps({"number": issue["number"], "url": issue["html_url"], "version": 1}))
+    result = {"number": issue["number"], "url": issue["html_url"], "version": 1}
+    # The GitHub issue already exists, so a linking failure must still report its number.
+    try:
+        link_linear(args.linear_id, issue["html_url"], issue["number"])
+        result["linear_linked"] = True
+    except SystemExit as e:
+        result["linear_linked"] = False
+        result["linear_link_error"] = str(e.code)
+    print(json.dumps(result))
+    if not result["linear_linked"]:
+        sys.exit(1)
+
+
+def link_linear(linear_id, url, number):
+    """Attach the GitHub issue to the Linear ticket as a plain link and verify it.
+
+    Uses attachmentCreate rather than the GitHub integration so Linear's native
+    two-way sync does not take ownership of the issue body.
+    """
+    issue_id = linear("query($id: String!) { issue(id: $id) { id } }", {"id": linear_id})["issue"]["id"]
+    res = linear(
+        "mutation($input: AttachmentCreateInput!) { attachmentCreate(input: $input) "
+        "{ success attachment { url } } }",
+        {"input": {"issueId": issue_id, "url": url, "title": f"{REPO}#{number}"}},
+    )["attachmentCreate"]
+    if not res["success"]:
+        sys.exit(f"attachmentCreate did not succeed for {linear_id}")
+    nodes = linear(
+        "query($id: String!) { issue(id: $id) { attachments { nodes { url sourceType } } } }",
+        {"id": linear_id},
+    )["issue"]["attachments"]["nodes"]
+    match = [a for a in nodes if (m := ISSUE_URL_RE.match(a["url"])) and int(m.group(1)) == number]
+    if not match:
+        sys.exit(f"{url} is not attached to {linear_id} after attachmentCreate")
+    if any(a["sourceType"] == "github" for a in match):
+        sys.exit(f"{url} was attached to {linear_id} as a native GitHub sync; replace it with a plain link")
+
+
+def cmd_link(args):
+    m = ISSUE_URL_RE.match(args.url) or sys.exit(f"Not an {REPO} issue URL: {args.url}")
+    link_linear(args.linear_id, args.url, int(m.group(1)))
+    print(json.dumps({"linear_id": args.linear_id, "url": args.url, "linear_linked": True}))
 
 
 def cmd_update(args):
@@ -224,6 +268,11 @@ def main():
     s = sub.add_parser("conversation-url")
     s.add_argument("--host", required=True, help="OpenHands app URL, e.g. https://app.all-hands.dev")
     s.set_defaults(func=cmd_conversation_url)
+
+    s = sub.add_parser("link")
+    s.add_argument("--linear-id", required=True)
+    s.add_argument("--url", required=True, help="https://github.com/OpenHands/enterprise/issues/<N>")
+    s.set_defaults(func=cmd_link)
 
     s = sub.add_parser("check-leaks")
     s.add_argument("--content-file", required=True)

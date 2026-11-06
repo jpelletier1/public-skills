@@ -58,7 +58,8 @@ _Posted by an AI agent (OpenHands) on behalf of <name>._
 
 ## Linear completion comment
 
-After the GitHub write succeeds and the label is removed:
+After the GitHub write succeeds, the Linear ticket links to the issue, and the label
+is removed:
 
 ```markdown
 Synced to OpenHands/enterprise#<N> (v<VERSION>): <GITHUB_ISSUE_URL>

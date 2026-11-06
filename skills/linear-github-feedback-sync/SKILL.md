@@ -21,7 +21,8 @@ exact text in this conversation.
   Set `S=<this skill directory>/scripts/feedback_sync.py`.
 - `GITHUB_TOKEN` with issue write access to `OpenHands/enterprise`.
 - `LINEAR_API_KEY` for `links` (the MCP does not expose an attachment's
-  `sourceType`). If it is missing, use the fallback in Step 2.
+  `sourceType`) and for linking a newly created issue back to Linear in `create`.
+  If it is missing, use the fallbacks in Step 2 and Step 5.
 
 Work in `/tmp/feedback-sync/` and delete it at the end.
 
@@ -125,13 +126,24 @@ For each approved ticket:
    that, redraft, and ask again.
 2. Run the same command as the approved dry run **without `--dry-run`**. Keep
    every other argument the same.
-   - `create` prints `{"number", "url", "version": 1}`.
+   - `create` opens the issue, then immediately attaches it to the Linear ticket
+     as a plain link titled `OpenHands/enterprise#<N>` (not the native sync) and
+     re-reads the ticket to confirm the link is there. It prints
+     `{"number", "url", "version": 1, "linear_linked": true}`.
    - `update` rewrites the body, appends `vN · <date> · Updated from Linear <ID>` to
      the sync history, and posts a short version comment on the GitHub issue so
-     watchers are notified.
-3. For **Create** only, link the new issue to Linear as a plain link, not the native
-   sync: `save_issue` with `id: <LINEAR-ID>` and
-   `links: [{url: <github url>, title: "OpenHands/enterprise#<N>"}]`.
+     watchers are notified. The link already exists (Step 2 found it).
+3. For **Create**, the GitHub issue must be linked to the Linear ticket before
+   continuing. If the output has `"linear_linked": false` (exit code 1), the GitHub
+   issue **was created**; never re-run `create`, which would open a duplicate.
+   Read `linear_link_error`, then link it:
+   - With `LINEAR_API_KEY`: `python3 $S link --linear-id <LINEAR-ID> --url <github url>`.
+   - Without it: `save_issue` with `id: <LINEAR-ID>` and
+     `links: [{url: <github url>, title: "OpenHands/enterprise#<N>"}]`, then
+     `get_issue` and confirm an attachment with that URL is present.
+
+   If the link still cannot be confirmed, stop for this ticket: keep the label, and
+   report the GitHub URL and the error so the user can link it by hand.
 4. Remove the label: `save_issue` with `id: <LINEAR-ID>` and
    `removeLabels: ["feedback-github-sync"]`.
 5. Post the completion comment from `references/templates.md`.
@@ -150,7 +162,8 @@ Report, per ticket: created or updated (with GitHub link and version), skipped
   conversation.
 - Never post the Linear URL, the alias mapping, or un-anonymized text to GitHub.
 - Never put draft text on Linear; the approval comment has only the link.
-- Remove the label only after the GitHub write succeeds.
+- Remove the label only after the GitHub write succeeds and, for a new issue, the
+  link from the Linear ticket to it is confirmed.
 - Use only the `bug` and `enhancement` labels on new issues; no assignee.
 
 ## Additional resources
@@ -160,4 +173,4 @@ Report, per ticket: created or updated (with GitHub link and version), skipped
 - **`references/templates.md`**: issue body, sync history format, Linear comments,
   and the draft presentation.
 - **`scripts/feedback_sync.py`**: `links`, `conversation-url`, `check-leaks`,
-  `create`, `update`. Run with `--help` for arguments.
+  `create`, `link`, `update`. Run with `--help` for arguments.
